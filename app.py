@@ -13,7 +13,7 @@ app.config['SESSION_TYPE'] = 'filesystem'
 Session(app)
 
 # URL của bạn
-LOCAL_URL = 'https://127.0.0.1:5000'
+LOCAL_URL = 'https://google-api-flask-mongodb.vercel.app/'
 
 # Cấu hình OAuth 2.0
 CLIENT_SECRETS_FILE = 'client_secret.json'
