@@ -4,12 +4,11 @@ from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from google.oauth2.credentials import Credentials
-from pymongo import MongoClient
 import os
 
 app = Flask(__name__)
 app.secret_key = 'huudungisthebest'
-app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_TYPE'] = 'filesystem'  # Hoặc 'memcached', 'redis', v.v.
 Session(app)
 
 # URL của bạn
@@ -26,15 +25,11 @@ SCOPES = [
     'https://www.googleapis.com/auth/drive.file'
 ]
 
-# Khởi tạo kết nối MongoDB
-client = MongoClient(
-    "mongodb+srv://huudung038:1@clusterhuudung.z5tdrft.mongodb.net/?retryWrites=true&w=majority&appName=ClusterHuuDung")
-app.db = client.firstflaskapp
-collection = app.db.hubData
 
 @app.route('/')
 def index():
     return render_template('index.html')
+
 
 @app.route('/login')
 def login():
@@ -46,6 +41,7 @@ def login():
     authorization_url, state = flow.authorization_url(access_type='offline', include_granted_scopes='true')
     session['state'] = state
     return redirect(authorization_url)
+
 
 @app.route('/oauth2callback')
 def oauth2callback():
@@ -68,6 +64,7 @@ def oauth2callback():
     session['credentials'] = credentials_to_dict(credentials)
 
     return redirect(url_for('select_sheet'))
+
 
 @app.route('/select_sheet')
 def select_sheet():
@@ -97,6 +94,7 @@ def select_sheet():
         return render_template('select_sheet.html', sheets=sheet_files, oauth_token=credentials.token)
     except HttpError as error:
         return f'An error occurred while listing files: {error}'
+
 
 @app.route('/read_sheet/<file_id>')
 def read_sheet(file_id):
@@ -134,11 +132,6 @@ def read_sheet(file_id):
         else:
             return "No sheets found in the spreadsheet."
 
-        # Lưu dữ liệu vào MongoDB
-        if values:
-            for row in values:
-                collection.insert_one({'data': row})
-
         # Trả về dữ liệu qua template
         return render_template('show_data.html', data=values)
     except HttpError as error:
@@ -147,6 +140,7 @@ def read_sheet(file_id):
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
         return f'An unexpected error occurred: {e}'
+
 
 def credentials_to_dict(credentials):
     return {
@@ -157,6 +151,7 @@ def credentials_to_dict(credentials):
         'client_secret': credentials.client_secret,
         'scopes': credentials.scopes
     }
+
 
 if __name__ == '__main__':
     app.run(port=5000, debug=True, ssl_context='adhoc')
