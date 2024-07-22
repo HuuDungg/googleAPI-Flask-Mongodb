@@ -138,13 +138,15 @@ def read_sheet(file_id):
             for row in values:
                 collection.insert_one({'data': row})
 
-        return f'Data from sheet saved to MongoDB: {values}'
+        # Trả về dữ liệu qua template
+        return render_template('show_data.html', data=values)
     except HttpError as error:
         print(f"An error occurred while reading sheet: {error}")
         return f'An error occurred while reading sheet: {error}'
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
         return f'An unexpected error occurred: {e}'
+
 
 
 def credentials_to_dict(credentials):
