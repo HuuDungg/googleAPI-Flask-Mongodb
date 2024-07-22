@@ -24,10 +24,5 @@
       "src": "api/**/*.py",
       "use": "@vercel/python"
     }
-  ],
-  "functions": {
-    "api/**/*.py": {
-      "maxDuration": 10
-    }
-  }
+  ]
 }
