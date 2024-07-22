@@ -3,7 +3,7 @@
     "FLASK_ENV": "production",
     "MONGO_URI": "mongodb+srv://huudung038:1@clusterhuudung.z5tdrft.mongodb.net/?retryWrites=true&w=majority&appName=ClusterHuuDung",
     "CLIENT_SECRETS_FILE": "client_secret.json",
-    "LOCAL_URL": "https://your-vercel-app-url.vercel.app"
+    "LOCAL_URL": "https://google-api-flask-mongodb.vercel.app"
   },
   "routes": [
     {
