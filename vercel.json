@@ -1,0 +1,33 @@
+{
+  "env": {
+    "FLASK_ENV": "production",
+    "MONGO_URI": "mongodb+srv://huudung038:1@clusterhuudung.z5tdrft.mongodb.net/?retryWrites=true&w=majority&appName=ClusterHuuDung",
+    "CLIENT_SECRETS_FILE": "client_secret.json",
+    "LOCAL_URL": "https://your-vercel-app-url.vercel.app"
+  },
+  "routes": [
+    {
+      "src": "/static/(.*)",
+      "dest": "/static/$1"
+    },
+    {
+      "src": "/templates/(.*)",
+      "dest": "/templates/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/api/$1"
+    }
+  ],
+  "builds": [
+    {
+      "src": "api/**/*.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "functions": {
+    "api/**/*.py": {
+      "maxDuration": 10
+    }
+  }
+}
