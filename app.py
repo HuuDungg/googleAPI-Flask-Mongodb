@@ -1,14 +1,17 @@
 from flask import Flask, redirect, request, session, url_for, render_template
 from flask_session import Session
+from redis import Redis
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from google.oauth2.credentials import Credentials
+from pymongo import MongoClient
 import os
 
 app = Flask(__name__)
 app.secret_key = 'huudungisthebest'
-app.config['SESSION_TYPE'] = 'filesystem'  # Hoặc 'memcached', 'redis', v.v.
+app.config['SESSION_TYPE'] = 'redis'
+app.config['SESSION_REDIS'] = Redis.from_url('redis://redis-12375.c12.us-east-1-4.ec2.redns.redis-cloud.com:12375')
 Session(app)
 
 # URL của bạn
@@ -25,35 +28,38 @@ SCOPES = [
     'https://www.googleapis.com/auth/drive.file'
 ]
 
+# Khởi tạo kết nối MongoDB
+client = MongoClient(
+    "mongodb+srv://huudung038:1@clusterhuudung.z5tdrft.mongodb.net/?retryWrites=true&w=majority&appName=ClusterHuuDung")
+app.db = client.firstflaskapp
+collection = app.db.hubData
 
 @app.route('/')
 def index():
     return render_template('index.html')
-
 
 @app.route('/login')
 def login():
     flow = Flow.from_client_secrets_file(
         CLIENT_SECRETS_FILE,
         scopes=SCOPES,
-        redirect_uri=f'{LOCAL_URL}/oauth2callback'  # Sử dụng URL của bạn
+        redirect_uri=f'{LOCAL_URL}/oauth2callback'
     )
     authorization_url, state = flow.authorization_url(access_type='offline', include_granted_scopes='true')
     session['state'] = state
     return redirect(authorization_url)
 
-
 @app.route('/oauth2callback')
 def oauth2callback():
     state = session.get('state')
     if not state:
-        return 'State not found in session', 400
+        return 'State not found. Possible session expiration or tampering.'
 
     flow = Flow.from_client_secrets_file(
         CLIENT_SECRETS_FILE,
         scopes=SCOPES,
         state=state,
-        redirect_uri=f'{LOCAL_URL}/oauth2callback'  # Sử dụng URL của bạn
+        redirect_uri=f'{LOCAL_URL}/oauth2callback'
     )
     try:
         flow.fetch_token(authorization_response=request.url)
@@ -64,7 +70,6 @@ def oauth2callback():
     session['credentials'] = credentials_to_dict(credentials)
 
     return redirect(url_for('select_sheet'))
-
 
 @app.route('/select_sheet')
 def select_sheet():
@@ -90,11 +95,9 @@ def select_sheet():
         if not sheet_files:
             return 'No Google Sheets files found.'
 
-        # Truyền token vào template
         return render_template('select_sheet.html', sheets=sheet_files, oauth_token=credentials.token)
     except HttpError as error:
         return f'An error occurred while listing files: {error}'
-
 
 @app.route('/read_sheet/<file_id>')
 def read_sheet(file_id):
@@ -112,18 +115,10 @@ def read_sheet(file_id):
     )
 
     try:
-        print(f"Token: {credentials.token}")
-        print(f"Refresh Token: {credentials.refresh_token}")
-        print(f"Scopes: {credentials.scopes}")
-
         sheets_service = build('sheets', 'v4', credentials=credentials)
-
-        # Lấy danh sách các sheet để kiểm tra tên sheet
         spreadsheet = sheets_service.spreadsheets().get(spreadsheetId=file_id).execute()
         sheet_names = [sheet['properties']['title'] for sheet in spreadsheet.get('sheets', [])]
-        print(f"Available sheets: {sheet_names}")
 
-        # Đọc dữ liệu từ sheet đầu tiên
         if sheet_names:
             sheet_name = sheet_names[0]
             range_name = f"{sheet_name}!A1:Z1000"
@@ -132,15 +127,15 @@ def read_sheet(file_id):
         else:
             return "No sheets found in the spreadsheet."
 
-        # Trả về dữ liệu qua template
+        if values:
+            for row in values:
+                collection.insert_one({'data': row})
+
         return render_template('show_data.html', data=values)
     except HttpError as error:
-        print(f"An error occurred while reading sheet: {error}")
         return f'An error occurred while reading sheet: {error}'
     except Exception as e:
-        print(f"An unexpected error occurred: {e}")
         return f'An unexpected error occurred: {e}'
-
 
 def credentials_to_dict(credentials):
     return {
@@ -151,7 +146,6 @@ def credentials_to_dict(credentials):
         'client_secret': credentials.client_secret,
         'scopes': credentials.scopes
     }
-
 
 if __name__ == '__main__':
     app.run(port=5000, debug=True, ssl_context='adhoc')
