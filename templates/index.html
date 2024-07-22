@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+    <!-- Thêm liên kết đến Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Thêm CSS tùy chỉnh -->
+    <style>
+        .centered-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-align: center;
+        }
+        .btn-custom {
+            background-color: #4285F4; /* Màu nền nút */
+            color: white; /* Màu chữ nút */
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: background-color 0.3s ease;
+        }
+        .btn-custom:hover {
+            background-color: #357ae8; /* Màu nền nút khi hover */
+        }
+    </style>
+</head>
+<body>
+    <div class="container centered-content">
+        <h1>Welcome to Flask Google OAuth</h1>
+        <a href="{{ url_for('login') }}" class="btn-custom">Login with Google</a>
+    </div>
+
+    <!-- Thêm liên kết đến Bootstrap JS (tùy chọn) -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

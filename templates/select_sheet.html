@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Google Sheet</title>
+    <!-- Thêm liên kết đến Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Thêm CSS tùy chỉnh -->
+    <style>
+        .container {
+            max-width: 600px;
+            margin-top: 50px;
+        }
+        .box {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .sheet-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        .sheet-list li {
+            margin: 10px 0;
+        }
+        .sheet-list a {
+            text-decoration: none;
+            color: #007bff;
+            font-size: 18px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .sheet-list a.btn {
+            display: block;
+            text-align: center;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+        }
+        .sheet-list a.btn:hover {
+            background-color: #0056b3;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container text-center">
+        <h1>Select Google Sheet</h1>
+        <div class="box">
+            <ul class="sheet-list">
+                {% for sheet in sheets %}
+                    <li>
+                        <a class="btn" href="{{ url_for('read_sheet', file_id=sheet.id) }}">{{ sheet.name }}</a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <!-- Thêm liên kết đến Bootstrap JS (tùy chọn) -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
