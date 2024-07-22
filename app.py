@@ -30,7 +30,7 @@ SCOPES = [
 client = MongoClient(
     "mongodb+srv://huudung038:1@clusterhuudung.z5tdrft.mongodb.net/?retryWrites=true&w=majority&appName=ClusterHuuDung")
 app.db = client.firstflaskapp
-collection = app.db.student
+collection = app.db.hubData
 
 @app.route('/')
 def index():
@@ -66,6 +66,7 @@ def oauth2callback():
 
     return redirect(url_for('select_sheet'))
 
+
 @app.route('/select_sheet')
 def select_sheet():
     credentials_dict = session.get('credentials')
@@ -90,7 +91,8 @@ def select_sheet():
         if not sheet_files:
             return 'No Google Sheets files found.'
 
-        return render_template('select_sheet.html', sheets=sheet_files)
+        # Truyền token vào template
+        return render_template('select_sheet.html', sheets=sheet_files, oauth_token=credentials.token)
     except HttpError as error:
         return f'An error occurred while listing files: {error}'
 

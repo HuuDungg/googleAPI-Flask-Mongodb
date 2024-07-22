@@ -1,69 +1,72 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Select Google Sheet</title>
-    <!-- Thêm liên kết đến Bootstrap CSS -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <!-- Thêm CSS tùy chỉnh -->
-    <style>
-        .container {
-            max-width: 600px;
-            margin-top: 50px;
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script>
+        // Lấy token từ biến Python
+        var oauthToken = "{{ oauth_token }}";  // Sử dụng dấu ngoặc kép để đảm bảo token được truyền đúng cách
+
+        function onApiLoad() {
+            gapi.load('auth2', initAuth);
+            gapi.load('picker', {'callback': onPickerApiLoad});
         }
-        .box {
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 20px;
-            background-color: #f8f9fa;
+
+        function initAuth() {
+            gapi.auth2.init({
+                client_id: '1079227357584-ge537is4vba6llgjh2rlgae7id7tf7mg.apps.googleusercontent.com',
+                scope: ['https://www.googleapis.com/auth/drive.file']
+            }).then(function(authInstance) {
+                if (authInstance.isSignedIn.get()) {
+                    oauthToken = authInstance.currentUser.get().getAuthResponse().access_token;
+                    createPicker();
+                } else {
+                    authInstance.signIn().then(function() {
+                        oauthToken = authInstance.currentUser.get().getAuthResponse().access_token;
+                        createPicker();
+                    }).catch(function(error) {
+                        console.error('Error during authentication:', error);
+                    });
+                }
+            }).catch(function(error) {
+                console.error('Error during auth initialization:', error);
+            });
         }
-        .sheet-list {
-            list-style-type: none;
-            padding: 0;
+
+        function onPickerApiLoad() {
+            // Đã tải Google Picker API
         }
-        .sheet-list li {
-            margin: 10px 0;
+
+        function createPicker() {
+            if (!oauthToken) {
+                console.error('OAuth token is null.');
+                return;
+            }
+
+            var picker = new google.picker.PickerBuilder()
+                .addView(google.picker.ViewId.SPREADSHEETS)
+                .setOAuthToken(oauthToken)
+                .setDeveloperKey('AIzaSyA2ADgP66DqhS1IS_vkakubzZak-ExqBPw')
+                .setCallback(pickerCallback)
+                .build();
+            picker.setVisible(true);
         }
-        .sheet-list a {
-            text-decoration: none;
-            color: #007bff;
-            font-size: 18px;
-            transition: background-color 0.3s ease, color 0.3s ease;
+
+        function pickerCallback(data) {
+            if (data[google.picker.Response.ACTION] == google.picker.Action.PICKED) {
+                var doc = data[google.picker.Response.DOCUMENTS][0];
+                var fileId = doc[google.picker.Document.ID];
+                window.location.href = '/read_sheet/' + fileId;
+            }
         }
-        .sheet-list a.btn {
-            display: block;
-            text-align: center;
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 16px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-        }
-        .sheet-list a.btn:hover {
-            background-color: #0056b3;
-            color: white;
-        }
-    </style>
+
+        // Tải các API
+        gapi.load('auth2', onApiLoad);
+        gapi.load('picker', onApiLoad);
+    </script>
 </head>
 <body>
-    <div class="container text-center">
-        <h1>Select Google Sheet</h1>
-        <div class="box">
-            <ul class="sheet-list">
-                {% for sheet in sheets %}
-                    <li>
-                        <a class="btn" href="{{ url_for('read_sheet', file_id=sheet.id) }}">{{ sheet.name }}</a>
-                    </li>
-                {% endfor %}
-            </ul>
-        </div>
-    </div>
-
-    <!-- Thêm liên kết đến Bootstrap JS (tùy chọn) -->
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <h1>Select a Google Sheet</h1>
+    <button onclick="createPicker()">Open Picker</button>
 </body>
 </html>
