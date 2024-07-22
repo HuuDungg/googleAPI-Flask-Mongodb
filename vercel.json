@@ -16,12 +16,12 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/api/$1"
+      "dest": "/app.py"
     }
   ],
   "builds": [
     {
-      "src": "api/**/*.py",
+      "src": "app.py",
       "use": "@vercel/python"
     }
   ]
