@@ -49,7 +49,10 @@ def login():
 
 @app.route('/oauth2callback')
 def oauth2callback():
-    state = session['state']
+    state = session.get('state')
+    if not state:
+        return 'State not found in session', 400
+
     flow = Flow.from_client_secrets_file(
         CLIENT_SECRETS_FILE,
         scopes=SCOPES,
@@ -65,7 +68,6 @@ def oauth2callback():
     session['credentials'] = credentials_to_dict(credentials)
 
     return redirect(url_for('select_sheet'))
-
 
 @app.route('/select_sheet')
 def select_sheet():
@@ -95,7 +97,6 @@ def select_sheet():
         return render_template('select_sheet.html', sheets=sheet_files, oauth_token=credentials.token)
     except HttpError as error:
         return f'An error occurred while listing files: {error}'
-
 
 @app.route('/read_sheet/<file_id>')
 def read_sheet(file_id):
@@ -146,8 +147,6 @@ def read_sheet(file_id):
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
         return f'An unexpected error occurred: {e}'
-
-
 
 def credentials_to_dict(credentials):
     return {
