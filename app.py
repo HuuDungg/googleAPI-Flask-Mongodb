@@ -1,11 +1,17 @@
+import random
+
 from flask import Flask, redirect, request, session, url_for, render_template
 from flask_session import Session
 from google_auth_oauthlib.flow import Flow
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
 from google.oauth2.credentials import Credentials
 from pymongo import MongoClient
-import os
+import pandas as pd
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+import random
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+import datetime as dt
 
 app = Flask(__name__)
 app.secret_key = 'huudungisthebest'
@@ -125,16 +131,19 @@ def read_sheet(file_id):
             range_name = f"{sheet_name}!A1:Z1000"
             sheet = sheets_service.spreadsheets().values().get(spreadsheetId=file_id, range=range_name).execute()
             values = sheet.get('values', [])
+            print(values)
         else:
             return "No sheets found in the spreadsheet."
 
         # Tạo sheet mới bên cạnh sheet đầu tiên và chèn dữ liệu
         create_sheet_next_to_existing(sheets_service, file_id, sheet_name, values)
+
         # Lưu dữ liệu vào MongoDB
         if values:
             for row in values:
                 collection.insert_one({'data': row})
         # Trả về dữ liệu qua template
+        createDiagram(values, filename='static/gantt_chart.png')
         return render_template('show_data.html', data=values)
     except HttpError as error:
         print(f"An error occurred while reading sheet: {error}")
@@ -170,7 +179,7 @@ def create_sheet_next_to_existing(sheets_service, spreadsheet_id, existing_sheet
         position = sheet_names.index(existing_sheet_name)
 
         # Tạo sheet mới
-        new_sheet_title = 'New Sheet'
+        new_sheet_title = f'New Sheet {random.randint(1000, 9999)}'
         requests = [
             {
                 'addSheet': {
@@ -221,7 +230,78 @@ def create_sheet_next_to_existing(sheets_service, spreadsheet_id, existing_sheet
             body=body
         ).execute()
 
-        print(f'Sheet "{new_sheet_title}" created and data inserted successfully.')
+        # Tạo biểu đồ trong sheet mới
+        chart_request = {
+            "requests": [
+                {
+                    "addChart": {
+                        "chart": {
+                            "spec": {
+                                "title": "Sample Chart",
+                                "basicChart": {
+                                    "chartType": "LINE",
+                                    "legendPosition": "BOTTOM_LEGEND",
+                                    "axis": [
+                                        {"position": "BOTTOM_AXIS", "title": "X-Axis"},
+                                        {"position": "LEFT_AXIS", "title": "Y-Axis"}
+                                    ],
+                                    "domains": [
+                                        {
+                                            "domain": {
+                                                "sourceRange": {
+                                                    "sources": [
+                                                        {
+                                                            "sheetId": new_sheet_id,
+                                                            "startRowIndex": 1,
+                                                            "startColumnIndex": 0,
+                                                            "endColumnIndex": 1
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "series": [
+                                        {
+                                            "series": {
+                                                "sourceRange": {
+                                                    "sources": [
+                                                        {
+                                                            "sheetId": new_sheet_id,
+                                                            "startRowIndex": 1,
+                                                            "startColumnIndex": 1,
+                                                            "endColumnIndex": 2
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            },
+                            "position": {
+                                "overlayPosition": {
+                                    "anchorCell": {
+                                        "sheetId": new_sheet_id,
+                                        "rowIndex": 0,
+                                        "columnIndex": 4
+                                    },
+                                    "offsetXPixels": 0,
+                                    "offsetYPixels": 0
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+
+        sheets_service.spreadsheets().batchUpdate(
+            spreadsheetId=spreadsheet_id,
+            body={"requests": chart_request}
+        ).execute()
+
+        print(f'Sheet "{new_sheet_title}" created, data inserted, and chart created successfully.')
     except HttpError as error:
         print(f'An error occurred: {error}')
     except ValueError as ve:
@@ -229,6 +309,61 @@ def create_sheet_next_to_existing(sheets_service, spreadsheet_id, existing_sheet
     except Exception as e:
         print(f'An unexpected error occurred: {e}')
 
+
+def createDiagram(values, filename='static/gantt_chart.png'):
+    data = []
+    for row in values:
+        if len(row) > 6 and row[2] and row[2][0].isdigit():
+            task = row[3] if row[3] else data[-1][0]
+            subtask = row[4]
+            hours = float(row[6])
+            data.append([task, subtask, hours])
+
+    df = pd.DataFrame(data, columns=['Task', 'Subtask', 'Duration'])
+
+    # Thêm cột Start và End cho mỗi subtask
+    start_date = dt.datetime(2024, 7, 1)
+    df['Start'] = [start_date + dt.timedelta(days=i // 3) for i in range(len(df))]
+    df['End'] = df['Start'] + df['Duration'].apply(lambda x: dt.timedelta(hours=x))
+    df['Duration'] = df['End'] - df['Start']
+
+    # Tạo danh sách các màu sắc
+    unique_subtasks = df['Subtask'].unique()
+    colors = plt.cm.tab20(range(len(unique_subtasks)))
+    color_map = dict(zip(unique_subtasks, colors))
+
+    # Thiết lập figure và axis
+    fig, ax = plt.subplots(figsize=(12, 8))
+
+    # Vẽ các task trên biểu đồ Gantt
+    patches = []
+    for i, (task, subtask, start, end) in enumerate(
+            zip(df['Task'], df['Subtask'], df['Start'], df['End'])):
+        color = color_map[subtask]
+        patch = ax.barh(task, (end - start).total_seconds() / 3600, left=start, color=color, edgecolor='black')
+        patches.append(patch)
+
+    # Thiết lập tiêu đề
+    plt.title('Project Management Schedule of Project X', fontsize=15)
+
+    # Định dạng trục x
+    ax.xaxis_date()
+    ax.xaxis.set_major_locator(mdates.DayLocator(interval=1))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+
+    # Thay đổi định dạng trục y và thêm lưới
+    plt.gca().invert_yaxis()
+    ax.xaxis.grid(True, alpha=0.5)
+
+    # Thêm chú giải
+    labels = [subtask for subtask in unique_subtasks]
+    handles = [patch for patch in patches]
+    ax.legend(handles, labels, fontsize=5)
+
+    # Lưu hình ảnh
+    plt.tight_layout()
+    plt.savefig(filename)
+    plt.close()
 
 if __name__ == '__main__':
     app.run(port=5000, debug=True, ssl_context='adhoc')
