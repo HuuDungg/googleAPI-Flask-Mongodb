@@ -3,33 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data from Google Sheets</title>
+    <title>Show Data</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
         table {
             width: 100%;
             border-collapse: collapse;
         }
-        table, th, td {
-            border: 1px solid #ddd;
-        }
         th, td {
+            border: 1px solid #ddd;
             padding: 8px;
             text-align: left;
         }
         th {
             background-color: #f2f2f2;
         }
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
+        .group-header {
+            background-color: #e0e0e0;
+            font-weight: bold;
+        }
+
+        thead {
+            position: sticky;
+            top: 0;
+            background-color: #f2f2f2; /* Same as the background of th */
+            z-index: 10; /* Ensure the header is above the table body */
         }
     </style>
 </head>
 <body>
-    <h1>Project Timeline</h1>
-    <img src="{{ url_for('static', filename='gantt_chart.png') }}" alt="Gantt Chart">
+    <h1>Data Table</h1>
+    <table class="timeline">
+        <thead>
+            <tr>
+                <th>No</th>
+                <th>Task</th>
+                <th>Estimated time (hours)</th>
+                <th>1</th>
+                <th>2</th>
+                <th>3</th>
+                <th>4</th>
+                <th>5</th>
+                <th>6</th>
+                <th>7</th>
+            </tr>
+        </thead>
+        <tbody>
+                {% for group in data %}
+                    <tr>
+                        <td>{{ group[0] }}</td>
+                        <td>{{ group[1] }}</td>
+                        <td>{{ group[4] }}</td>
+
+                        {% for i in range(1, 8) %}
+                            <td>
+                                {% if group[0] | int == i %}
+                                    {{ group[2] }}
+                                {% else %}
+
+                                {% endif %}
+                            </td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+        </tbody>
+    </table>
 </body>
 </html>

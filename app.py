@@ -128,22 +128,21 @@ def read_sheet(file_id):
         # Đọc dữ liệu từ sheet đầu tiên
         if sheet_names:
             sheet_name = sheet_names[0]
-            range_name = f"{sheet_name}!A1:Z1000"
+            range_name = f"{sheet_name}!C3:M30"
             sheet = sheets_service.spreadsheets().values().get(spreadsheetId=file_id, range=range_name).execute()
             values = sheet.get('values', [])
-            print(values)
         else:
             return "No sheets found in the spreadsheet."
 
         # Tạo sheet mới bên cạnh sheet đầu tiên và chèn dữ liệu
         create_sheet_next_to_existing(sheets_service, file_id, sheet_name, values)
-
+        print(values)
         # Lưu dữ liệu vào MongoDB
-        if values:
-            for row in values:
-                collection.insert_one({'data': row})
+        # if values:
+        #     for row in values:
+        #         collection.insert_one({'data': row})
+
         # Trả về dữ liệu qua template
-        createDiagram(values, filename='static/gantt_chart.png')
         return render_template('show_data.html', data=values)
     except HttpError as error:
         print(f"An error occurred while reading sheet: {error}")
@@ -344,7 +343,7 @@ def createDiagram(values, filename='static/gantt_chart.png'):
         patches.append(patch)
 
     # Thiết lập tiêu đề
-    plt.title('Project Management Schedule of Project X', fontsize=15)
+    plt.title('Project Management Schedule of Project X', fontsize=10)
 
     # Định dạng trục x
     ax.xaxis_date()
